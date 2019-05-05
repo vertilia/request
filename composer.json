@@ -1,0 +1,30 @@
+{
+  "name": "vertilia/request",
+  "description": "Simple library to abstract requests (CLI, HTTP, etc.)",
+  "license": "BSD",
+  "type": "library",
+  "autoload": {
+    "exclude-from-classmap": [
+      "/tests/"
+    ],
+    "psr-4": {
+      "Vertilia\\Request\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true
+  },
+  "repositories": [
+    {
+        "url": "https://github.com/vertilia/valid-array.git",
+        "type": "github"
+    }
+  ],
+  "require": {
+    "php": "^7.1",
+    "vertilia/valid-array": "^1.0"
+  },
+  "suggest": {
+    "phpunit/phpunit": "To run tests"
+  }
+}
