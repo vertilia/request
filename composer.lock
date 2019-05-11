@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "70c29fae288500f87beb3dc1882c056c",
+    "content-hash": "d8d5788dccf187f0a34d213f6ffacb63",
     "packages": [
         {
             "name": "vertilia/valid-array",
