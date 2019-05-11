@@ -14,12 +14,6 @@
   "config": {
     "optimize-autoloader": true
   },
-  "repositories": [
-    {
-        "url": "https://github.com/vertilia/valid-array.git",
-        "type": "github"
-    }
-  ],
   "require": {
     "php": "^7.1",
     "vertilia/valid-array": "^1.0"
