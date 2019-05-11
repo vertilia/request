@@ -10,21 +10,6 @@ use PHPUnit\Framework\TestCase;
 class HttpRequestTest extends TestCase
 {
     /**
-     * @param array $args
-     * @return HttpRequest
-     */
-    public function getHttpRequest(array $args = []): HttpRequest
-    {
-        return new HttpRequest(
-            $args['server'] ?? [],
-            $args['get'] ?? null,
-            $args['post'] ?? null,
-            $args['cookies'] ?? null,
-            $args['php_input'] ?? null
-        );
-    }
-
-    /**
      * @covers ::__construct
      */
     public function testHttpRequestConstruct()
@@ -232,11 +217,66 @@ class HttpRequestTest extends TestCase
      * @param string $name
      * @param string $value
      */
-    public function testHttpRequestFilterSet($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
+    public function testHttpRequestSetFilters($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
     {
-        $request = new HttpRequest($server, $get, $post, $cookie, $php_input);
+        $request = new HttpRequest(
+            $server,
+            $get,
+            $post,
+            ['id2' => 15, 'name2' => 'Stas'] + ($cookie ?: []),
+            $php_input,
+            ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
+        );
+
+        // check initial values
+        $this->assertEquals(15, $request['id2']);
+        $this->assertEquals('Stas', $request['name2']);
+
+        // setFilters()
         $request->setFilters($filters);
+        // check expected value
         $this->assertEquals($value, $request[$name]);
+
+        // check initial values unset
+        $this->assertNotContains('id2',$request);
+        $this->assertNotContains('name2',$request);
+    }
+
+    /**
+     * @dataProvider httpRequestValidationProvider
+     * @covers ::addFilters
+     * @covers ::filter
+     * @covers ::offsetGet
+     * @param array $server
+     * @param array $get
+     * @param array $post
+     * @param array $cookie
+     * @param string $php_input
+     * @param array $filters
+     * @param string $name
+     * @param string $value
+     */
+    public function testHttpRequestAddFilters($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
+    {
+        $request = new HttpRequest(
+            ['HTTP_ID2' => 15, 'HTTP_NAME2' => 'Stas'] + ($server ?: []),
+            $get,
+            $post,
+            $cookie,
+            $php_input,
+            ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
+        );
+
+        // check initial values
+        $this->assertEquals(15, $request['id2']);
+        $this->assertEquals('Stas', $request['name2']);
+
+        $request->addFilters($filters);
+        $this->assertEquals($value, $request[$name]);
+
+        // check initial values still present
+        $this->assertEquals(15, $request['id2']);
+        $this->assertEquals('Stas', $request['name2']);
     }
 
     /** data provider */

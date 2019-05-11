@@ -6,15 +6,10 @@ namespace Vertilia\Request;
 use Vertilia\ValidArray\MutableValidArray;
 
 /**
- * Input parameters are not validated nor stored here. Only raw values from request.
- * Router will validate incoming parameters based on request attributes (method, path, etc.)
- * and pass them and request as arguments to corresponding controller.
- */
-
-/**
- * Represents current request with corresponding method, path, args, cookies,
- * routes and controller names. Parses routing table against $http_path to get
- * controller name. Validates input parameters.
+ * Represents current HTTP request with its method, path, args, cookies, headers
+ * etc. Allows array access to all validated arguments. Since extends
+ * MutableValidArray, allows setting filters after the instantiation. When
+ * filters are set or added, corresponding values are revalidated if present.
  */
 class HttpRequest extends MutableValidArray implements HttpRequestInterface
 {
@@ -171,7 +166,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
 
     /**
      * Overrides MutableValidArray::setFilters() by validating headers, cookies, post and get values
-     * together with valuea already registered with $this
+     * together with values already registered with $this
      *
      * @param array $filters filters descriptions to add to existing structure
      * @param bool $add_empty whether to add missing values as NULL
