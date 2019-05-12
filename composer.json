@@ -1,7 +1,7 @@
 {
   "name": "vertilia/request",
   "description": "Simple library to abstract requests (CLI, HTTP, etc.)",
-  "license": "BSD",
+  "license": "BSD-2-Clause",
   "type": "library",
   "autoload": {
     "exclude-from-classmap": [
