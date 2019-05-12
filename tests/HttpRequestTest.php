@@ -15,16 +15,16 @@ class HttpRequestTest extends TestCase
     public function testHttpRequestConstruct()
     {
         $request = new HttpRequest([]);
-        $this->assertInstanceOf(HttpRequest::class, $request);
+        $this->assertInstanceOf(HttpRequestInterface::class, $request);
     }
 
     /**
      * @dataProvider httpRequestMultiProvider
-     * @covers ::getHttpMethod
-     * @covers ::getHttpScheme
-     * @covers ::getHttpHost
-     * @covers ::getHttpPort
-     * @covers ::getHttpPath
+     * @covers ::getMethod
+     * @covers ::getScheme
+     * @covers ::getHost
+     * @covers ::getPort
+     * @covers ::getPath
      * @param array $server
      * @param string $method
      * @param string $scheme
@@ -36,12 +36,12 @@ class HttpRequestTest extends TestCase
     public function testHttpRequestMulti($server, $method, $scheme, $host, $port, $path, $query)
     {
         $request = new HttpRequest($server);
-        $this->assertEquals($method, $request->getHttpMethod());
-        $this->assertEquals($scheme, $request->getHttpScheme());
-        $this->assertEquals($host, $request->getHttpHost());
-        $this->assertEquals($port, $request->getHttpPort());
-        $this->assertEquals($path, $request->getHttpPath());
-        $this->assertEquals($query, $request->getHttpQuery());
+        $this->assertEquals($method, $request->getMethod());
+        $this->assertEquals($scheme, $request->getScheme());
+        $this->assertEquals($host, $request->getHost());
+        $this->assertEquals($port, $request->getPort());
+        $this->assertEquals($path, $request->getPath());
+        $this->assertEquals($query, $request->getQuery());
     }
 
     /** data provider */
@@ -102,7 +102,7 @@ class HttpRequestTest extends TestCase
 
     /**
      * @dataProvider httpRequestDecodedArgsProvider
-     * @covers ::getHttpGet
+     * @covers ::getVarsGet
      * @param string $get
      * @param string $name
      * @param string $value
@@ -110,14 +110,14 @@ class HttpRequestTest extends TestCase
     public function testRequestGet($get, $name, $value)
     {
         $request = new HttpRequest([], $get);
-        $arr = $request->getHttpGet();
+        $arr = $request->getVarsGet();
         $this->assertArrayHasKey($name, $arr);
         $this->assertEquals($value, $arr[$name]);
     }
 
     /**
      * @dataProvider httpRequestDecodedArgsProvider
-     * @covers ::getHttpPost
+     * @covers ::getVarsPost
      * @param string $post
      * @param string $name
      * @param string $value
@@ -125,14 +125,14 @@ class HttpRequestTest extends TestCase
     public function testRequestPost($post, $name, $value)
     {
         $request = new HttpRequest([], null, $post);
-        $arr = $request->getHttpPost();
+        $arr = $request->getVarsPost();
         $this->assertArrayHasKey($name, $arr);
         $this->assertEquals($value, $arr[$name]);
     }
 
     /**
      * @dataProvider httpRequestDecodedArgsProvider
-     * @covers ::getHttpCookies
+     * @covers ::getCookies
      * @param string $cookies
      * @param string $name
      * @param string $value
@@ -140,7 +140,7 @@ class HttpRequestTest extends TestCase
     public function testRequestCookies($cookies, $name, $value)
     {
         $request = new HttpRequest([], null, null, $cookies);
-        $arr = $request->getHttpCookies();
+        $arr = $request->getCookies();
         $this->assertArrayHasKey($name, $arr);
         $this->assertEquals($value, $arr[$name]);
     }
@@ -158,7 +158,7 @@ class HttpRequestTest extends TestCase
 
     /**
      * @dataProvider httpRequestHeadersProvider
-     * @covers ::getHttpCookies
+     * @covers ::getHeaders
      * @param array $server
      * @param string $name
      * @param string $value
@@ -166,7 +166,7 @@ class HttpRequestTest extends TestCase
     public function testRequestHeaders($server, $name, $value)
     {
         $request = new HttpRequest($server);
-        $arr = $request->getHttpHeaders();
+        $arr = $request->getHeaders();
         $this->assertArrayHasKey($name, $arr);
         $this->assertEquals($value, $arr[$name]);
     }
@@ -198,8 +198,8 @@ class HttpRequestTest extends TestCase
     {
         $request = new HttpRequest($server, $get, $post, $cookie, $php_input, $filters);
         $this->assertEquals($value, $request[$name]);
-        if (!in_array($request->getHttpMethod(), ['GET', 'POST']) and empty($post) and $php_input) {
-            $this->assertGreaterThan(0, count($request->getHttpPost()));
+        if (!in_array($request->getMethod(), ['GET', 'POST']) and empty($post) and $php_input) {
+            $this->assertGreaterThan(0, count($request->getVarsPost()));
         }
     }
 
@@ -223,14 +223,14 @@ class HttpRequestTest extends TestCase
             $server,
             $get,
             $post,
-            ['id2' => 15, 'name2' => 'Stas'] + ($cookie ?: []),
+            ['id2' => 15, 'name2' => 'Vostok'] + ($cookie ?: []),
             $php_input,
             ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
         );
 
         // check initial values
         $this->assertEquals(15, $request['id2']);
-        $this->assertEquals('Stas', $request['name2']);
+        $this->assertEquals('Vostok', $request['name2']);
 
         // setFilters()
         $request->setFilters($filters);
@@ -238,8 +238,8 @@ class HttpRequestTest extends TestCase
         $this->assertEquals($value, $request[$name]);
 
         // check initial values unset
-        $this->assertNotContains('id2',$request);
-        $this->assertNotContains('name2',$request);
+        $this->assertNotContains('id2', $request);
+        $this->assertNotContains('name2', $request);
     }
 
     /**
@@ -259,7 +259,7 @@ class HttpRequestTest extends TestCase
     public function testHttpRequestAddFilters($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
     {
         $request = new HttpRequest(
-            ['HTTP_ID2' => 15, 'HTTP_NAME2' => 'Stas'] + ($server ?: []),
+            ['HTTP_ID2' => 15, 'HTTP_NAME2' => 'Vostok'] + ($server ?: []),
             $get,
             $post,
             $cookie,
@@ -269,14 +269,14 @@ class HttpRequestTest extends TestCase
 
         // check initial values
         $this->assertEquals(15, $request['id2']);
-        $this->assertEquals('Stas', $request['name2']);
+        $this->assertEquals('Vostok', $request['name2']);
 
         $request->addFilters($filters);
         $this->assertEquals($value, $request[$name]);
 
         // check initial values still present
         $this->assertEquals(15, $request['id2']);
-        $this->assertEquals('Stas', $request['name2']);
+        $this->assertEquals('Vostok', $request['name2']);
     }
 
     /** data provider */

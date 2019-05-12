@@ -11,50 +11,50 @@ interface HttpRequestInterface
     /**
      * @return string HTTP request method
      */
-    public function getHttpMethod(): string;
+    public function getMethod(): string;
 
     /**
      * @return string HTTP request scheme
      */
-    public function getHttpScheme() : string;
+    public function getScheme() : string;
 
     /**
      * @return string HTTP request host
      */
-    public function getHttpHost() : string;
+    public function getHost() : string;
 
     /**
      * @return int HTTP request port
      */
-    public function getHttpPort() : int;
+    public function getPort() : int;
 
     /**
      * @return string HTTP request path
      */
-    public function getHttpPath() : string;
+    public function getPath() : string;
 
     /**
      * @return string HTTP request query string
      */
-    public function getHttpQuery() : string;
+    public function getQuery() : string;
+
+    /**
+     * @return array HTTP request GET variables
+     */
+    public function getVarsGet(): array;
+
+    /**
+     * @return array HTTP request POST variables
+     */
+    public function getVarsPost(): array;
 
     /**
      * @return array HTTP request cookies
      */
-    public function getHttpGet(): array;
-
-    /**
-     * @return array HTTP request cookies
-     */
-    public function getHttpPost(): array;
-
-    /**
-     * @return array HTTP request cookies
-     */
-    public function getHttpCookies(): array;
+    public function getCookies(): array;
 
     /**
      * @return array HTTP request headers
      */
-    public function getHttpHeaders(): array;
+    public function getHeaders(): array;
 }

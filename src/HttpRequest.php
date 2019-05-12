@@ -14,25 +14,25 @@ use Vertilia\ValidArray\MutableValidArray;
 class HttpRequest extends MutableValidArray implements HttpRequestInterface
 {
     /** @var string */
-    protected $http_method = '';
+    protected $method = '';
     /** @var string */
-    protected $http_scheme = '';
+    protected $scheme = '';
     /** @var string */
-    protected $http_host = '';
+    protected $host = '';
     /** @var int */
-    protected $http_port = 0;
+    protected $port = 0;
     /** @var string */
-    protected $http_path = '';
+    protected $path = '';
     /** @var string */
-    protected $http_query = '';
+    protected $query = '';
     /** @var array */
-    protected $http_get = [];
+    protected $vars_get = [];
     /** @var array */
-    protected $http_post = [];
+    protected $vars_post = [];
     /** @var array */
-    protected $http_cookies = [];
+    protected $cookies = [];
     /** @var array */
-    protected $http_headers = [];
+    protected $headers = [];
 
     /**
      * Initializes Request with input parameters, parses routes
@@ -52,55 +52,55 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         array $filters = null
     ) {
         // method from REQUEST_METHOD
-        $this->http_method = $server['REQUEST_METHOD'] ?? '';
+        $this->method = $server['REQUEST_METHOD'] ?? '';
         // scheme from REQUEST_SCHEME or HTTPS
         if (isset($server['REQUEST_SCHEME'])) {
-            $this->http_scheme = $server['REQUEST_SCHEME'];
+            $this->scheme = $server['REQUEST_SCHEME'];
         } elseif (isset($server['HTTPS']) and $server['HTTPS'] != 'off') {
-            $this->http_scheme = 'https';
+            $this->scheme = 'https';
         }
         // host and port from HTTP_HOST
         if (isset($server['HTTP_HOST'])) {
-            list($this->http_host, $this->http_port) = explode(':', $server['HTTP_HOST']);
+            list($this->host, $this->port) = explode(':', $server['HTTP_HOST']);
         }
         // port from SERVER_PORT
-        if (empty($this->http_port)) {
-            $this->http_port = $server['SERVER_PORT'] ?? ($this->http_scheme == 'https'
+        if (empty($this->port)) {
+            $this->port = $server['SERVER_PORT'] ?? ($this->scheme == 'https'
                 ? 443
-                : ($this->http_host ? 80 : 0)
+                : ($this->host ? 80 : 0)
             );
         }
-        $this->http_port = (int) $this->http_port;
+        $this->port = (int) $this->port;
         // path and query from REQUEST_URI
         if (isset($server['REQUEST_URI'])) {
-            list($this->http_path, $this->http_query) = explode('?', $server['REQUEST_URI'], 2);
+            list($this->path, $this->query) = explode('?', $server['REQUEST_URI'], 2);
         }
         // query from QUERY_STRING or REQUEST_URI
-        $this->http_query = $server['QUERY_STRING'] ?? $this->http_query ?: '';
-        $this->http_get = $get ?: [];
-        $this->http_post = $post ?: [];
-        $this->http_cookies = $cookies ?: [];
+        $this->query = $server['QUERY_STRING'] ?? $this->query ?: '';
+        $this->vars_get = $get ?: [];
+        $this->vars_post = $post ?: [];
+        $this->cookies = $cookies ?: [];
 
         // set headers
         foreach ($server as $k => $v) {
             if (\strncmp($k, 'HTTP_', 5) === 0) {
-                $this->http_headers[\strtolower(\strtr(\substr($k, 5), '_', '-'))] = $v;
+                $this->headers[\strtolower(\strtr(\substr($k, 5), '_', '-'))] = $v;
             }
         }
 
         // for methods other than GET and POST fetch args from $php_input
         // and register them as post arguments
-        if (! \in_array($this->http_method, ['GET', 'POST'])
-            and isset($this->http_headers['content-type'])
+        if (! \in_array($this->method, ['GET', 'POST'])
+            and isset($this->headers['content-type'])
             and isset($php_input)
         ) {
-            list($type) = \explode(';', $this->http_headers['content-type'], 2);
+            list($type) = \explode(';', $this->headers['content-type'], 2);
             switch (trim($type)) {
                 case 'application/json':
-                    $this->http_post = \json_decode($php_input, true) ?: null;
+                    $this->vars_post = \json_decode($php_input, true) ?: null;
                     break;
                 case 'application/x-www-form-urlencoded':
-                    \parse_str($php_input, $this->http_post);
+                    \parse_str($php_input, $this->vars_post);
                     break;
             }
         }
@@ -109,59 +109,59 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         if ($filters) {
             parent::__construct(
                 $filters,
-                $this->http_headers + $this->http_cookies + $this->http_post + $this->http_get
+                $this->headers + $this->cookies + $this->vars_post + $this->vars_get
             );
         }
     }
 
-    public function getHttpMethod(): string
+    public function getMethod(): string
     {
-        return $this->http_method;
+        return $this->method;
     }
 
-    public function getHttpScheme(): string
+    public function getScheme(): string
     {
-        return $this->http_scheme;
+        return $this->scheme;
     }
 
-    public function getHttpHost(): string
+    public function getHost(): string
     {
-        return $this->http_host;
+        return $this->host;
     }
 
-    public function getHttpPort(): int
+    public function getPort(): int
     {
-        return $this->http_port;
+        return $this->port;
     }
 
-    public function getHttpPath(): string
+    public function getPath(): string
     {
-        return $this->http_path;
+        return $this->path;
     }
 
-    public function getHttpQuery(): string
+    public function getQuery(): string
     {
-        return $this->http_query;
+        return $this->query;
     }
 
-    public function getHttpGet(): array
+    public function getVarsGet(): array
     {
-        return $this->http_get;
+        return $this->vars_get;
     }
 
-    public function getHttpPost(): array
+    public function getVarsPost(): array
     {
-        return $this->http_post;
+        return $this->vars_post;
     }
 
-    public function getHttpCookies(): array
+    public function getCookies(): array
     {
-        return $this->http_cookies;
+        return $this->cookies;
     }
 
-    public function getHttpHeaders(): array
+    public function getHeaders(): array
     {
-        return $this->http_headers;
+        return $this->headers;
     }
 
     /**
@@ -176,7 +176,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     {
         parent::__construct(
             $filters,
-            (array) $this + $this->http_headers + $this->http_cookies + $this->http_post + $this->http_get,
+            (array) $this + $this->headers + $this->cookies + $this->vars_post + $this->vars_get,
             $add_empty
         );
 
@@ -193,7 +193,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     public function addFilters(array $filters): MutableValidArray
     {
         $this->filters = \array_replace($this->filters, $filters);
-        $values = (array) $this + $this->http_headers + $this->http_cookies + $this->http_post + $this->http_get;
+        $values = (array) $this + $this->headers + $this->cookies + $this->vars_post + $this->vars_get;
 
         foreach ($filters as $k => $v) {
             if (\array_key_exists($k, $values)) {
