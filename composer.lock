@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "vertilia/valid-array",
-            "version": "v1.1.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vertilia/valid-array.git",
-                "reference": "38b507cde5e9f5cdd34201c29edef9cf65943b9a"
+                "reference": "3c08edfee1a8f9aa82f10ddbdb0ecda3b65f064c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vertilia/valid-array/zipball/38b507cde5e9f5cdd34201c29edef9cf65943b9a",
-                "reference": "38b507cde5e9f5cdd34201c29edef9cf65943b9a",
+                "url": "https://api.github.com/repos/vertilia/valid-array/zipball/3c08edfee1a8f9aa82f10ddbdb0ecda3b65f064c",
+                "reference": "3c08edfee1a8f9aa82f10ddbdb0ecda3b65f064c",
                 "shasum": ""
             },
             "require": {
@@ -35,15 +35,12 @@
                     "Vertilia\\ValidArray\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
-                "BSD"
+                "BSD-2-Clause"
             ],
             "description": "Object with automatic items validation based on standard filtering mechanism of php",
-            "support": {
-                "source": "https://github.com/vertilia/valid-array/tree/v1.1.0",
-                "issues": "https://github.com/vertilia/valid-array/issues"
-            },
-            "time": "2019-05-05T00:57:34+00:00"
+            "time": "2019-05-19T11:13:27+00:00"
         }
     ],
     "packages-dev": [],

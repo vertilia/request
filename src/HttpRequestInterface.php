@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace Vertilia\Request;
 
+use Vertilia\ValidArray\MutableFiltersInterface;
+
 /**
  * Children must handle HTTP request characteristics, like method name, scheme, port etc.
  */
-interface HttpRequestInterface
+interface HttpRequestInterface extends MutableFiltersInterface
 {
     /**
      * @return string HTTP request method

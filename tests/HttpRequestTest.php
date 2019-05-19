@@ -3,6 +3,7 @@
 namespace Vertilia\Request;
 
 use PHPUnit\Framework\TestCase;
+use Vertilia\ValidArray\MutableFiltersInterface;
 
 /**
  * @coversDefaultClass HttpRequest
@@ -15,6 +16,7 @@ class HttpRequestTest extends TestCase
     public function testHttpRequestConstruct()
     {
         $request = new HttpRequest([]);
+        $this->assertInstanceOf(MutableFiltersInterface::class, $request);
         $this->assertInstanceOf(HttpRequestInterface::class, $request);
     }
 
