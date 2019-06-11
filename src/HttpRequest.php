@@ -184,7 +184,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     }
 
     /**
-     * Overrides MutableValidArray::setFilters() by validating headers, cookies, post and get values
+     * Overrides MutableValidArray::addFilters() by validating headers, cookies, post and get values
      * together with values already registered with $this
      *
      * @param array $filters filters descriptions to add to existing structure
