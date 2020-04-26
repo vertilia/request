@@ -10,6 +10,19 @@ use Vertilia\ValidArray\MutableFiltersInterface;
  */
 class HttpRequestTest extends TestCase
 {
+    protected $temp_file;
+
+    public function setUp()
+    {
+        $this->temp_file = tempnam(sys_get_temp_dir(), 'test_');
+        file_put_contents($this->temp_file, "Delete me\n");
+    }
+
+    public function tearDown()
+    {
+        unlink($this->temp_file);
+    }
+
     /**
      * @covers ::__construct
      */
@@ -159,6 +172,55 @@ class HttpRequestTest extends TestCase
     }
 
     /**
+     * @dataProvider httpRequestFilesProvider
+     * @covers ::getFiles
+     * @param string $files
+     * @param string $name
+     */
+    public function testRequestFiles($files, $name)
+    {
+        $request = new HttpRequest([], null, null, null, $files);
+        $rf = $request->getFiles();
+        $this->assertArrayHasKey($name, $rf);
+        if (is_array($rf[$name]['error'])) {
+            foreach ($rf[$name]['error'] as $key => $err) {
+                if ($err == UPLOAD_ERR_OK) {
+                    $this->assertEquals(filesize($rf[$name]['tmp_name'][$key]), $rf[$name]['size'][$key]);
+                } else {
+                    echo "Filename {$rf[$name]['name'][$key]} from group $name lost\n";
+                }
+            }
+        } else {
+            $this->assertEquals(filesize($rf[$name]['tmp_name']), $rf[$name]['size']);
+        }
+    }
+
+    /** data provider */
+    public function httpRequestFilesProvider()
+    {
+        return [
+            [
+                ['single_file' =>[
+                    'name' => 'TestFile.txt',
+                    'type' => 'text/plain',
+                    'size' => filesize($this->temp_file),
+                    'tmp_name' => $this->temp_file,
+                    'error' => UPLOAD_ERR_OK,
+                ]], 'single_file'
+            ],
+            [
+                ['multiple_files' =>[
+                    'name' => ['TestFile1.txt', 'TestFile2.txt'],
+                    'type' => ['text/plain', 'text/plain'],
+                    'size' => [filesize($this->temp_file), filesize($this->temp_file)],
+                    'tmp_name' => [$this->temp_file, $this->temp_file],
+                    'error' => [UPLOAD_ERR_OK, UPLOAD_ERR_OK],
+                ]], 'multiple_files'
+            ],
+        ];
+    }
+
+    /**
      * @dataProvider httpRequestHeadersProvider
      * @covers ::getHeaders
      * @param array $server
@@ -184,8 +246,9 @@ class HttpRequestTest extends TestCase
 
     /**
      * @dataProvider httpRequestValidationProvider
-     * @covers ::setFilters
-     * @covers ::filter
+     * @covers ::__constructor
+     * @covers ::getMethod
+     * @covers ::getVarsPost
      * @covers ::offsetGet
      * @param array $server
      * @param array $get
@@ -198,7 +261,7 @@ class HttpRequestTest extends TestCase
      */
     public function testHttpRequestFilter($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
     {
-        $request = new HttpRequest($server, $get, $post, $cookie, $php_input, $filters);
+        $request = new HttpRequest($server, $get, $post, $cookie, null, $php_input, $filters);
         $this->assertEquals($value, $request[$name]);
         if (!in_array($request->getMethod(), ['GET', 'POST']) and empty($post) and $php_input) {
             $this->assertGreaterThan(0, count($request->getVarsPost()));
@@ -226,6 +289,7 @@ class HttpRequestTest extends TestCase
             $get,
             $post,
             ['id2' => 15, 'name2' => 'Vostok'] + ($cookie ?: []),
+            null,
             $php_input,
             ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
         );
@@ -261,10 +325,11 @@ class HttpRequestTest extends TestCase
     public function testHttpRequestAddFilters($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
     {
         $request = new HttpRequest(
-            ['HTTP_ID2' => 15, 'HTTP_NAME2' => 'Vostok'] + ($server ?: []),
-            $get,
+            $server,
+            ['id2' => 15, 'name2' => 'Vostok'] + ($get ?: []),
             $post,
             $cookie,
+            null,
             $php_input,
             ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
         );
@@ -299,7 +364,6 @@ class HttpRequestTest extends TestCase
             'HTTP_UPGRADE_INSECURE_REQUESTS' => '1',
             'HTTP_CACHE_CONTROL' => 'max-age=0',
             'HTTP_CONNECTION' => 'keep-alive',
-            'HTTP_HOST' => 'localhost',
             'REQUEST_METHOD' => 'GET',
             'REQUEST_SCHEME' => 'http',
             'HTTP_HOST' => 'localhost:9000',
@@ -335,8 +399,6 @@ class HttpRequestTest extends TestCase
                 [$server_get, $get, null, $cookie, null, ['limit' => \FILTER_VALIDATE_INT], 'limit', 10],
             'from get: ln' =>
                 [$server_get, $get, null, $cookie, null, ['ln' => \FILTER_SANITIZE_STRING], 'ln', 'en'],
-            'from header: cookie' =>
-                [$server_get, $get, null, $cookie, null, ['cookie' => \FILTER_SANITIZE_STRING], 'cookie', 'ln=en'],
 
             'from php_input: id' =>
                 [$server_put, null, null, null, $php_input, $filter2, 'id', 123],

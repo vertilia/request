@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Vertilia\Request;
 
+use Vertilia\MimeType\ApplicationJson;
+use Vertilia\MimeType\ApplicationXWwwFormUrlencoded;
 use Vertilia\ValidArray\MutableValidArray;
 
 /**
@@ -33,14 +35,26 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     protected $cookies = [];
     /** @var array */
     protected $headers = [];
+    /** @var array */
+    protected $files = [];
 
     /**
-     * Initializes Request with input parameters, parses routes
+     * Initializes Request with input parameters, parses routes.
+     * $_SERVER params that provide current state:
+     * - REQUEST_METHOD -- request method
+     * - REQUEST_SCHEME -- request scheme
+     * - HTTPS -- request scheme
+     * - HTTP_HOST -- http header Host, request port
+     * - SERVER_PORT -- request port
+     * - REQUEST_URI -- request path, request query
+     * - QUERY_STRING -- request query
+     * - HTTP_* -- http headers
      *
      * @param array $server normally from $_SERVER
      * @param array $get normally from $_GET
      * @param array $post normally from $_POST
      * @param array $cookies normally from $_COOKIE
+     * @param array $files normally from $_FILES
      * @param string $php_input normally from php://input
      */
     public function __construct(
@@ -48,6 +62,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         array $get = null,
         array $post = null,
         array $cookies = null,
+        array $files = null,
         string $php_input = null,
         array $filters = null
     ) {
@@ -76,10 +91,15 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
             list($this->path, $this->query) = explode('?', $server['REQUEST_URI'], 2);
         }
         // query from QUERY_STRING or REQUEST_URI
-        $this->query = $server['QUERY_STRING'] ?? $this->query ?: '';
-        $this->vars_get = $get ?: [];
+        $this->query = $server['QUERY_STRING'] ?? ($this->query ?: '');
+        if ($get) {
+            $this->vars_get = (array)$get;
+        } elseif ($this->query) {
+            \parse_str("{$this->query}", $this->vars_get);
+        }
         $this->vars_post = $post ?: [];
         $this->cookies = $cookies ?: [];
+        $this->files = $files?: [];
 
         // set headers
         foreach ($server as $k => $v) {
@@ -95,23 +115,29 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
             and isset($php_input)
         ) {
             list($type) = \explode(';', $this->headers['content-type'], 2);
-            switch (trim($type)) {
-                case 'application/json':
-                    $this->vars_post = \json_decode($php_input, true) ?: null;
-                    break;
-                case 'application/x-www-form-urlencoded':
-                    \parse_str($php_input, $this->vars_post);
-                    break;
-            }
+            $this->vars_post = (array)$this->decodeMimeType($type, $php_input);
         }
 
         // set filtered args if provided
         if ($filters) {
-            parent::__construct(
-                $filters,
-                $this->headers + $this->cookies + $this->vars_post + $this->vars_get
-            );
+            $this->setFilters($filters);
         }
+    }
+
+    protected function decodeMimeType($mime_type, $content)
+    {
+        switch ($mime_type) {
+            case 'application/json':
+                $mt = new ApplicationJson();
+                break;
+            case 'application/x-www-form-urlencoded':
+                $mt = new ApplicationXWwwFormUrlencoded();
+                break;
+            default:
+                throw new UnexpectedValueException('Unknown mime type');
+        }
+
+        return $mt->decode($content);
     }
 
     public function getMethod(): string
@@ -159,13 +185,18 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         return $this->cookies;
     }
 
+    public function getFiles(): array
+    {
+        return $this->files;
+    }
+
     public function getHeaders(): array
     {
         return $this->headers;
     }
 
     /**
-     * Overrides MutableValidArray::setFilters() by validating headers, cookies, post and get values
+     * Overrides MutableValidArray::setFilters() by validating cookies, post and get values
      * together with values already registered with $this
      *
      * @param array $filters filters descriptions to add to existing structure
@@ -176,7 +207,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     {
         parent::__construct(
             $filters,
-            (array) $this + $this->headers + $this->cookies + $this->vars_post + $this->vars_get,
+            $this->cookies + $this->vars_post + $this->vars_get + (array) $this,
             $add_empty
         );
 
@@ -184,7 +215,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     }
 
     /**
-     * Overrides MutableValidArray::addFilters() by validating headers, cookies, post and get values
+     * Overrides MutableValidArray::addFilters() by validating cookies, post and get values
      * together with values already registered with $this
      *
      * @param array $filters filters descriptions to add to existing structure
@@ -193,7 +224,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     public function addFilters(array $filters): MutableValidArray
     {
         $this->filters = \array_replace($this->filters, $filters);
-        $values = (array) $this + $this->headers + $this->cookies + $this->vars_post + $this->vars_get;
+        $values = $this->cookies + $this->vars_post + $this->vars_get + (array) $this;
 
         foreach ($filters as $k => $v) {
             if (\array_key_exists($k, $values)) {

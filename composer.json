@@ -16,6 +16,7 @@
   },
   "require": {
     "php": "^7.1",
+    "vertilia/mime-type": "^1.0",
     "vertilia/valid-array": "^1.0"
   },
   "suggest": {
