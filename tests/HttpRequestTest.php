@@ -12,13 +12,13 @@ class HttpRequestTest extends TestCase
 {
     protected $temp_file;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->temp_file = tempnam(sys_get_temp_dir(), 'test_');
         file_put_contents($this->temp_file, "Delete me\n");
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         unlink($this->temp_file);
     }
@@ -48,7 +48,7 @@ class HttpRequestTest extends TestCase
      * @param string $path
      * @param string $query
      */
-    public function testHttpRequestMulti($server, $method, $scheme, $host, $port, $path, $query)
+    public function testHttpRequestMulti(array $server, string $method, string $scheme, string $host, int $port, string $path, string $query)
     {
         $request = new HttpRequest($server);
         $this->assertEquals($method, $request->getMethod());
@@ -60,7 +60,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestMultiProvider()
+    public function httpRequestMultiProvider(): array
     {
         return [
             [
@@ -118,11 +118,11 @@ class HttpRequestTest extends TestCase
     /**
      * @dataProvider httpRequestDecodedArgsProvider
      * @covers ::getVarsGet
-     * @param string $get
+     * @param array $get
      * @param string $name
-     * @param string $value
+     * @param ?string $value
      */
-    public function testRequestGet($get, $name, $value)
+    public function testRequestGet(array $get, string $name, ?string $value)
     {
         $request = new HttpRequest([], $get);
         $arr = $request->getVarsGet();
@@ -133,11 +133,11 @@ class HttpRequestTest extends TestCase
     /**
      * @dataProvider httpRequestDecodedArgsProvider
      * @covers ::getVarsPost
-     * @param string $post
+     * @param array $post
      * @param string $name
-     * @param string $value
+     * @param ?string $value
      */
-    public function testRequestPost($post, $name, $value)
+    public function testRequestPost(array $post, string $name, ?string $value)
     {
         $request = new HttpRequest([], null, $post);
         $arr = $request->getVarsPost();
@@ -148,11 +148,11 @@ class HttpRequestTest extends TestCase
     /**
      * @dataProvider httpRequestDecodedArgsProvider
      * @covers ::getCookies
-     * @param string $cookies
+     * @param array $cookies
      * @param string $name
-     * @param string $value
+     * @param ?string $value
      */
-    public function testRequestCookies($cookies, $name, $value)
+    public function testRequestCookies(array $cookies, string $name, ?string $value)
     {
         $request = new HttpRequest([], null, null, $cookies);
         $arr = $request->getCookies();

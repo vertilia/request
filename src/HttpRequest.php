@@ -16,27 +16,27 @@ use Vertilia\ValidArray\MutableValidArray;
 class HttpRequest extends MutableValidArray implements HttpRequestInterface
 {
     /** @var string */
-    protected $method = '';
+    protected string $method = '';
     /** @var string */
-    protected $scheme = '';
+    protected string $scheme = '';
     /** @var string */
-    protected $host = '';
+    protected string $host = '';
     /** @var int */
-    protected $port = 0;
+    protected int $port = 0;
     /** @var string */
-    protected $path = '';
+    protected string $path = '';
     /** @var string */
-    protected $query = '';
+    protected string $query = '';
     /** @var array */
-    protected $vars_get = [];
+    protected array $vars_get = [];
     /** @var array */
-    protected $vars_post = [];
+    protected array $vars_post = [];
     /** @var array */
-    protected $cookies = [];
+    protected array $cookies = [];
     /** @var array */
-    protected $headers = [];
+    protected array $headers = [];
     /** @var array */
-    protected $files = [];
+    protected array $files = [];
 
     /**
      * Initializes Request with input parameters, parses routes.
@@ -51,11 +51,11 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
      * - HTTP_* -- http headers
      *
      * @param array $server normally from $_SERVER
-     * @param array $get normally from $_GET
-     * @param array $post normally from $_POST
-     * @param array $cookies normally from $_COOKIE
-     * @param array $files normally from $_FILES
-     * @param string $php_input normally from php://input
+     * @param ?array $get normally from $_GET
+     * @param ?array $post normally from $_POST
+     * @param ?array $cookies normally from $_COOKIE
+     * @param ?array $files normally from $_FILES
+     * @param ?string $php_input normally from php://input
      */
     public function __construct(
         array $server,
@@ -76,7 +76,8 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         }
         // host and port from HTTP_HOST
         if (isset($server['HTTP_HOST'])) {
-            list($this->host, $this->port) = explode(':', $server['HTTP_HOST']);
+            list($this->host, $port) = explode(':', "{$server['HTTP_HOST']}:", 2);
+            $this->port = (int)$port;
         }
         // port from SERVER_PORT
         if (empty($this->port)) {
@@ -88,14 +89,14 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         $this->port = (int) $this->port;
         // path and query from REQUEST_URI
         if (isset($server['REQUEST_URI'])) {
-            list($this->path, $this->query) = explode('?', $server['REQUEST_URI'], 2);
+            list($this->path, $this->query) = explode('?', "{$server['REQUEST_URI']}?");
         }
         // query from QUERY_STRING or REQUEST_URI
         $this->query = $server['QUERY_STRING'] ?? ($this->query ?: '');
         if ($get) {
-            $this->vars_get = (array)$get;
+            $this->vars_get = $get;
         } elseif ($this->query) {
-            \parse_str("{$this->query}", $this->vars_get);
+            parse_str($this->query, $this->vars_get);
         }
         $this->vars_post = $post ?: [];
         $this->cookies = $cookies ?: [];
@@ -103,18 +104,18 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
 
         // set headers
         foreach ($server as $k => $v) {
-            if (\strncmp($k, 'HTTP_', 5) === 0) {
-                $this->headers[\strtolower(\strtr(\substr($k, 5), '_', '-'))] = $v;
+            if (strncmp($k, 'HTTP_', 5) === 0) {
+                $this->headers[strtolower(strtr(substr($k, 5), '_', '-'))] = $v;
             }
         }
 
         // for methods other than GET and POST fetch args from $php_input
         // and register them as post arguments
-        if (! \in_array($this->method, ['GET', 'POST'])
+        if (! in_array($this->method, ['GET', 'POST'])
             and isset($this->headers['content-type'])
             and isset($php_input)
         ) {
-            list($type) = \explode(';', $this->headers['content-type'], 2);
+            list($type) = explode(';', $this->headers['content-type'], 2);
             $this->vars_post = (array)$this->decodeMimeType($type, $php_input);
         }
 
@@ -134,7 +135,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
                 $mt = new ApplicationXWwwFormUrlencoded();
                 break;
             default:
-                throw new UnexpectedValueException('Unknown mime type');
+                throw new \UnexpectedValueException('Unknown mime type');
         }
 
         return $mt->decode($content);
@@ -223,11 +224,11 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
      */
     public function addFilters(array $filters): MutableValidArray
     {
-        $this->filters = \array_replace($this->filters, $filters);
+        $this->filters = array_replace($this->filters, $filters);
         $values = $this->cookies + $this->vars_post + $this->vars_get + (array) $this;
 
         foreach ($filters as $k => $v) {
-            if (\array_key_exists($k, $values)) {
+            if (array_key_exists($k, $values)) {
                 // revalidate existing value;
                 $this[$k] = $values[$k];
             }
