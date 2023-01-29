@@ -5,14 +5,18 @@ namespace Vertilia\Request;
 use PHPUnit\Framework\TestCase;
 use Vertilia\ValidArray\MutableFiltersInterface;
 
+use const FILTER_DEFAULT;
+use const FILTER_REQUIRE_ARRAY;
+use const FILTER_VALIDATE_INT;
+
 /**
  * @coversDefaultClass HttpRequest
  */
 class HttpRequestTest extends TestCase
 {
-    protected $temp_file;
+    protected string $temp_file;
 
-    public function setUp(): void
+    public function setUpTempFile(): void
     {
         $this->temp_file = tempnam(sys_get_temp_dir(), 'test_');
         file_put_contents($this->temp_file, "Delete me\n");
@@ -20,7 +24,9 @@ class HttpRequestTest extends TestCase
 
     public function tearDown(): void
     {
-        unlink($this->temp_file);
+        if (!empty($this->temp_file)) {
+            unlink($this->temp_file);
+        }
     }
 
     /**
@@ -161,7 +167,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestDecodedArgsProvider()
+    public function httpRequestDecodedArgsProvider(): array
     {
         $sample = ['a' => 'b', 'c' => null];
 
@@ -174,10 +180,10 @@ class HttpRequestTest extends TestCase
     /**
      * @dataProvider httpRequestFilesProvider
      * @covers ::getFiles
-     * @param string $files
+     * @param string[] $files
      * @param string $name
      */
-    public function testRequestFiles($files, $name)
+    public function testRequestFiles(array $files, string $name)
     {
         $request = new HttpRequest([], null, null, null, $files);
         $rf = $request->getFiles();
@@ -196,8 +202,12 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestFilesProvider()
+    public function httpRequestFilesProvider(): array
     {
+        if (empty($this->temp_file)) {
+            $this->setUpTempFile();
+        }
+
         return [
             [
                 ['single_file' =>[
@@ -227,7 +237,7 @@ class HttpRequestTest extends TestCase
      * @param string $name
      * @param string $value
      */
-    public function testRequestHeaders($server, $name, $value)
+    public function testRequestHeaders(array $server, string $name, string $value)
     {
         $request = new HttpRequest($server);
         $arr = $request->getHeaders();
@@ -236,7 +246,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestHeadersProvider()
+    public function httpRequestHeadersProvider(): array
     {
         return [
             [['HTTP_HOST' => 'localhost'], 'host', 'localhost'],
@@ -250,19 +260,22 @@ class HttpRequestTest extends TestCase
      * @covers ::getMethod
      * @covers ::getVarsPost
      * @covers ::offsetGet
-     * @param array $server
-     * @param array $get
-     * @param array $post
-     * @param array $cookie
-     * @param string $php_input
-     * @param array $filters
-     * @param string $name
-     * @param string $value
+     * @param ?array $server
+     * @param ?array $get
+     * @param ?array $post
+     * @param ?array $cookie
+     * @param ?string $php_input
+     * @param ?array $filters
+     * @param ?string $name
+     * @param mixed $value
      */
-    public function testHttpRequestFilter($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
+    public function testHttpRequestFilter(?array $server, ?array $get, ?array $post, ?array $cookie, ?string $php_input, ?array $filters, ?string $name, $value)
     {
         $request = new HttpRequest($server, $get, $post, $cookie, null, $php_input, $filters);
-        $this->assertEquals($value, $request[$name]);
+        $this->assertInstanceOf(HttpRequest::class, $request);
+        if (isset($name)) {
+            $this->assertEquals($value, $request[$name]);
+        }
         if (!in_array($request->getMethod(), ['GET', 'POST']) and empty($post) and $php_input) {
             $this->assertGreaterThan(0, count($request->getVarsPost()));
         }
@@ -273,16 +286,16 @@ class HttpRequestTest extends TestCase
      * @covers ::setFilters
      * @covers ::filter
      * @covers ::offsetGet
-     * @param array $server
-     * @param array $get
-     * @param array $post
-     * @param array $cookie
-     * @param string $php_input
-     * @param array $filters
-     * @param string $name
-     * @param string $value
+     * @param ?array $server
+     * @param ?array $get
+     * @param ?array $post
+     * @param ?array $cookie
+     * @param ?string $php_input
+     * @param ?array $filters
+     * @param ?string $name
+     * @param mixed $value
      */
-    public function testHttpRequestSetFilters($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
+    public function testHttpRequestSetFilters(?array $server, ?array $get, ?array $post, ?array $cookie, ?string $php_input, ?array $filters, ?string $name, $value)
     {
         $request = new HttpRequest(
             $server,
@@ -291,7 +304,7 @@ class HttpRequestTest extends TestCase
             ['id2' => 15, 'name2' => 'Vostok'] + ($cookie ?: []),
             null,
             $php_input,
-            ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
+            ['id2' => FILTER_VALIDATE_INT, 'name2' => FILTER_DEFAULT]
         );
 
         // check initial values
@@ -299,9 +312,13 @@ class HttpRequestTest extends TestCase
         $this->assertEquals('Vostok', $request['name2']);
 
         // setFilters()
-        $request->setFilters($filters);
-        // check expected value
-        $this->assertEquals($value, $request[$name]);
+        if ($filters) {
+            $request->setFilters($filters);
+            // check expected value
+            if (isset($name)) {
+                $this->assertEquals($value, $request[$name]);
+            }
+        }
 
         // check initial values unset
         $this->assertNotContains('id2', $request);
@@ -313,16 +330,16 @@ class HttpRequestTest extends TestCase
      * @covers ::addFilters
      * @covers ::filter
      * @covers ::offsetGet
-     * @param array $server
-     * @param array $get
-     * @param array $post
-     * @param array $cookie
-     * @param string $php_input
-     * @param array $filters
-     * @param string $name
-     * @param string $value
+     * @param ?array $server
+     * @param ?array $get
+     * @param ?array $post
+     * @param ?array $cookie
+     * @param ?string $php_input
+     * @param ?array $filters
+     * @param ?string $name
+     * @param mixed $value
      */
-    public function testHttpRequestAddFilters($server, $get, $post, $cookie, $php_input, $filters, $name, $value)
+    public function testHttpRequestAddFilters(?array $server, ?array $get, ?array $post, ?array $cookie, ?string $php_input, ?array $filters, ?string $name, $value)
     {
         $request = new HttpRequest(
             $server,
@@ -331,15 +348,19 @@ class HttpRequestTest extends TestCase
             $cookie,
             null,
             $php_input,
-            ['id2' => \FILTER_VALIDATE_INT, 'name2' => \FILTER_DEFAULT]
+            ['id2' => FILTER_VALIDATE_INT, 'name2' => FILTER_DEFAULT]
         );
 
         // check initial values
         $this->assertEquals(15, $request['id2']);
         $this->assertEquals('Vostok', $request['name2']);
 
-        $request->addFilters($filters);
-        $this->assertEquals($value, $request[$name]);
+        if ($filters) {
+            $request->addFilters($filters);
+            if (isset($name)) {
+                $this->assertEquals($value, $request[$name]);
+            }
+        }
 
         // check initial values still present
         $this->assertEquals(15, $request['id2']);
@@ -347,7 +368,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestValidationProvider()
+    public function httpRequestValidationProvider(): array
     {
         $server_get = [
             'HTTP_COOKIE' => 'ln=en',
@@ -390,15 +411,15 @@ class HttpRequestTest extends TestCase
         $php_input_patch = '{"id":"123","name":["Amundsen-Scott","Dome Fuji"]}';
 
         $filter2 = [
-            'id' => \FILTER_VALIDATE_INT,
-            'name' => ['filter' => \FILTER_SANITIZE_STRING, 'flags' => \FILTER_REQUIRE_ARRAY]
+            'id' => FILTER_VALIDATE_INT,
+            'name' => ['filter' => FILTER_DEFAULT, 'flags' => FILTER_REQUIRE_ARRAY]
         ];
 
         return [
             'from get: limit' =>
-                [$server_get, $get, null, $cookie, null, ['limit' => \FILTER_VALIDATE_INT], 'limit', 10],
+                [$server_get, $get, null, $cookie, null, ['limit' => FILTER_VALIDATE_INT], 'limit', 10],
             'from get: ln' =>
-                [$server_get, $get, null, $cookie, null, ['ln' => \FILTER_SANITIZE_STRING], 'ln', 'en'],
+                [$server_get, $get, null, $cookie, null, ['ln' => FILTER_DEFAULT], 'ln', 'en'],
 
             'from php_input: id' =>
                 [$server_put, null, null, null, $php_input, $filter2, 'id', 123],
@@ -413,6 +434,11 @@ class HttpRequestTest extends TestCase
                 [$server_patch, null, null, null, $php_input_patch, $filter2, 'name', ['Amundsen-Scott', 'Dome Fuji']],
             'from php_input_patch: name err' =>
                 [$server_patch, null, null, null, '{"id":"123","name":"Dome Fuji"}', $filter2, 'name', false],
+
+            'empty' =>
+                [[], null, null, null, null, null, null, null],
+            'basic' =>
+                [['REQUEST_URI'=>'/index.php'] + $server_get, null, null, null, null, null, null, null],
         ];
     }
 }

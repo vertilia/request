@@ -4,7 +4,7 @@ Simple library to abstract request information and validate user input.
 
 Built on [`ValidArray`](https://github.com/vertilia/valid-array), it not only
 provides access to main request information, but integrates input arguments
-filtering. This allows for a simplified access to validated request parameters
+filtering. This allows for simplified access to validated request parameters
 as in the example below:
 
 ```php
@@ -18,7 +18,7 @@ $request = new \Vertilia\Request\HttpRequest(
     file_get_contents('php://input'),
     [
         'id' => ['filter' => \FILTER_VALIDATE_INT, 'options' => ['min_range' => 1]],
-        'name' => \FILTER_SANITIZE_STRING,
+        'name' => \FILTER_DEFAULT,
         'email' => \FILTER_VALIDATE_EMAIL,
         'profile' => ['filter' => \FILTER_VALIDATE_URL, 'flags' => \FILTER_FLAG_HOST_REQUIRED],
     ]

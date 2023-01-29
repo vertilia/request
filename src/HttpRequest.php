@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Vertilia\Request;
 
+use UnexpectedValueException;
 use Vertilia\MimeType\ApplicationJson;
 use Vertilia\MimeType\ApplicationXWwwFormUrlencoded;
 use Vertilia\ValidArray\MutableValidArray;
@@ -135,7 +136,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
                 $mt = new ApplicationXWwwFormUrlencoded();
                 break;
             default:
-                throw new \UnexpectedValueException('Unknown mime type');
+                throw new UnexpectedValueException('Unknown mime type');
         }
 
         return $mt->decode($content);
