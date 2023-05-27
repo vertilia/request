@@ -123,6 +123,21 @@ class HttpRequestTest extends TestCase
 
     /**
      * @dataProvider httpRequestDecodedArgsProvider
+     * @covers ::getVarsServer
+     * @param array $server
+     * @param string $name
+     * @param ?string $value
+     */
+    public function testRequestServer(array $server, string $name, ?string $value)
+    {
+        $request = new HttpRequest($server);
+        $arr = $request->getVarsServer();
+        $this->assertArrayHasKey($name, $arr);
+        $this->assertEquals($value, $arr[$name]);
+    }
+
+    /**
+     * @dataProvider httpRequestDecodedArgsProvider
      * @covers ::getVarsGet
      * @param array $get
      * @param string $name

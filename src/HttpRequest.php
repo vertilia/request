@@ -16,27 +16,17 @@ use Vertilia\ValidArray\MutableValidArray;
  */
 class HttpRequest extends MutableValidArray implements HttpRequestInterface
 {
-    /** @var string */
     protected string $method = '';
-    /** @var string */
     protected string $scheme = '';
-    /** @var string */
     protected string $host = '';
-    /** @var int */
     protected int $port = 0;
-    /** @var string */
     protected string $path = '';
-    /** @var string */
     protected string $query = '';
-    /** @var array */
+    protected array $vars_server = [];
     protected array $vars_get = [];
-    /** @var array */
     protected array $vars_post = [];
-    /** @var array */
     protected array $cookies = [];
-    /** @var array */
     protected array $headers = [];
-    /** @var array */
     protected array $files = [];
 
     /**
@@ -67,33 +57,34 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         string $php_input = null,
         array $filters = null
     ) {
+        $this->vars_server = $server;
         // method from REQUEST_METHOD
-        $this->method = $server['REQUEST_METHOD'] ?? '';
+        $this->method = $this->vars_server['REQUEST_METHOD'] ?? '';
         // scheme from REQUEST_SCHEME or HTTPS
-        if (isset($server['REQUEST_SCHEME'])) {
-            $this->scheme = $server['REQUEST_SCHEME'];
-        } elseif (isset($server['HTTPS']) and $server['HTTPS'] != 'off') {
+        if (isset($this->vars_server['REQUEST_SCHEME'])) {
+            $this->scheme = $this->vars_server['REQUEST_SCHEME'];
+        } elseif (isset($this->vars_server['HTTPS']) and $this->vars_server['HTTPS'] != 'off') {
             $this->scheme = 'https';
         }
         // host and port from HTTP_HOST
-        if (isset($server['HTTP_HOST'])) {
-            list($this->host, $port) = explode(':', "{$server['HTTP_HOST']}:", 2);
+        if (isset($this->vars_server['HTTP_HOST'])) {
+            list($this->host, $port) = explode(':', "{$this->vars_server['HTTP_HOST']}:", 2);
             $this->port = (int)$port;
         }
         // port from SERVER_PORT
         if (empty($this->port)) {
-            $this->port = $server['SERVER_PORT'] ?? ($this->scheme == 'https'
+            $this->port = $this->vars_server['SERVER_PORT'] ?? ($this->scheme == 'https'
                 ? 443
                 : ($this->host ? 80 : 0)
             );
         }
         $this->port = (int) $this->port;
         // path and query from REQUEST_URI
-        if (isset($server['REQUEST_URI'])) {
-            list($this->path, $this->query) = explode('?', "{$server['REQUEST_URI']}?");
+        if (isset($this->vars_server['REQUEST_URI'])) {
+            list($this->path, $this->query) = explode('?', "{$this->vars_server['REQUEST_URI']}?");
         }
         // query from QUERY_STRING or REQUEST_URI
-        $this->query = $server['QUERY_STRING'] ?? ($this->query ?: '');
+        $this->query = $this->vars_server['QUERY_STRING'] ?? ($this->query ?: '');
         if ($get) {
             $this->vars_get = $get;
         } elseif ($this->query) {
@@ -104,7 +95,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         $this->files = $files?: [];
 
         // set headers
-        foreach ($server as $k => $v) {
+        foreach ($this->vars_server as $k => $v) {
             if (strncmp($k, 'HTTP_', 5) === 0) {
                 $this->headers[strtolower(strtr(substr($k, 5), '_', '-'))] = $v;
             }
@@ -170,6 +161,11 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     public function getQuery(): string
     {
         return $this->query;
+    }
+
+    public function getVarsServer(): array
+    {
+        return $this->vars_server;
     }
 
     public function getVarsGet(): array
