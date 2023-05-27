@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Vertilia\Request;
@@ -78,7 +79,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
                 : ($this->host ? 80 : 0)
             );
         }
-        $this->port = (int) $this->port;
+        $this->port = (int)$this->port;
         // path and query from REQUEST_URI
         if (isset($this->vars_server['REQUEST_URI'])) {
             list($this->path, $this->query) = explode('?', "{$this->vars_server['REQUEST_URI']}?");
@@ -92,7 +93,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         }
         $this->vars_post = $post ?: [];
         $this->cookies = $cookies ?: [];
-        $this->files = $files?: [];
+        $this->files = $files ?: [];
 
         // set headers
         foreach ($this->vars_server as $k => $v) {
@@ -103,7 +104,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
 
         // for methods other than GET and POST fetch args from $php_input
         // and register them as post arguments
-        if (! in_array($this->method, ['GET', 'POST'])
+        if (!in_array($this->method, ['GET', 'POST'])
             and isset($this->headers['content-type'])
             and isset($php_input)
         ) {
@@ -131,6 +132,25 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         }
 
         return $mt->decode($content);
+    }
+
+    /**
+     * Overrides MutableValidArray::setFilters() by validating cookies, post and get values
+     * together with values already registered with $this
+     *
+     * @param array $filters filters descriptions to add to existing structure
+     * @param bool $add_empty whether to add missing values as NULL
+     * @return MutableValidArray $this
+     */
+    public function setFilters(array $filters, bool $add_empty = true): MutableValidArray
+    {
+        parent::__construct(
+            $filters,
+            $this->cookies + $this->vars_post + $this->vars_get + (array)$this,
+            $add_empty
+        );
+
+        return $this;
     }
 
     public function getMethod(): string
@@ -194,25 +214,6 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     }
 
     /**
-     * Overrides MutableValidArray::setFilters() by validating cookies, post and get values
-     * together with values already registered with $this
-     *
-     * @param array $filters filters descriptions to add to existing structure
-     * @param bool $add_empty whether to add missing values as NULL
-     * @return MutableValidArray $this
-     */
-    public function setFilters(array $filters, bool $add_empty = true): MutableValidArray
-    {
-        parent::__construct(
-            $filters,
-            $this->cookies + $this->vars_post + $this->vars_get + (array) $this,
-            $add_empty
-        );
-
-        return $this;
-    }
-
-    /**
      * Overrides MutableValidArray::addFilters() by validating cookies, post and get values
      * together with values already registered with $this
      *
@@ -222,7 +223,7 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     public function addFilters(array $filters): MutableValidArray
     {
         $this->filters = array_replace($this->filters, $filters);
-        $values = $this->cookies + $this->vars_post + $this->vars_get + (array) $this;
+        $values = $this->cookies + $this->vars_post + $this->vars_get + (array)$this;
 
         foreach ($filters as $k => $v) {
             if (array_key_exists($k, $values)) {

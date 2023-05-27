@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Vertilia\Request;
@@ -18,27 +19,27 @@ interface HttpRequestInterface extends MutableFiltersInterface
     /**
      * @return string HTTP request scheme
      */
-    public function getScheme() : string;
+    public function getScheme(): string;
 
     /**
      * @return string HTTP request host
      */
-    public function getHost() : string;
+    public function getHost(): string;
 
     /**
      * @return int HTTP request port
      */
-    public function getPort() : int;
+    public function getPort(): int;
 
     /**
      * @return string HTTP request path
      */
-    public function getPath() : string;
+    public function getPath(): string;
 
     /**
      * @return string HTTP request query string
      */
-    public function getQuery() : string;
+    public function getQuery(): string;
 
     /**
      * @return array HTTP request GET variables

@@ -54,8 +54,15 @@ class HttpRequestTest extends TestCase
      * @param string $path
      * @param string $query
      */
-    public function testHttpRequestMulti(array $server, string $method, string $scheme, string $host, int $port, string $path, string $query)
-    {
+    public function testHttpRequestMulti(
+        array $server,
+        string $method,
+        string $scheme,
+        string $host,
+        int $port,
+        string $path,
+        string $query
+    ) {
         $request = new HttpRequest($server);
         $this->assertEquals($method, $request->getMethod());
         $this->assertEquals($scheme, $request->getScheme());
@@ -284,8 +291,16 @@ class HttpRequestTest extends TestCase
      * @param ?string $name
      * @param mixed $value
      */
-    public function testHttpRequestFilter(?array $server, ?array $get, ?array $post, ?array $cookie, ?string $php_input, ?array $filters, ?string $name, $value)
-    {
+    public function testHttpRequestFilter(
+        ?array $server,
+        ?array $get,
+        ?array $post,
+        ?array $cookie,
+        ?string $php_input,
+        ?array $filters,
+        ?string $name,
+        $value
+    ) {
         $request = new HttpRequest($server, $get, $post, $cookie, null, $php_input, $filters);
         $this->assertInstanceOf(HttpRequest::class, $request);
         if (isset($name)) {
@@ -310,8 +325,16 @@ class HttpRequestTest extends TestCase
      * @param ?string $name
      * @param mixed $value
      */
-    public function testHttpRequestSetFilters(?array $server, ?array $get, ?array $post, ?array $cookie, ?string $php_input, ?array $filters, ?string $name, $value)
-    {
+    public function testHttpRequestSetFilters(
+        ?array $server,
+        ?array $get,
+        ?array $post,
+        ?array $cookie,
+        ?string $php_input,
+        ?array $filters,
+        ?string $name,
+        $value
+    ) {
         $request = new HttpRequest(
             $server,
             $get,
@@ -354,8 +377,16 @@ class HttpRequestTest extends TestCase
      * @param ?string $name
      * @param mixed $value
      */
-    public function testHttpRequestAddFilters(?array $server, ?array $get, ?array $post, ?array $cookie, ?string $php_input, ?array $filters, ?string $name, $value)
-    {
+    public function testHttpRequestAddFilters(
+        ?array $server,
+        ?array $get,
+        ?array $post,
+        ?array $cookie,
+        ?string $php_input,
+        ?array $filters,
+        ?string $name,
+        $value
+    ) {
         $request = new HttpRequest(
             $server,
             ['id2' => 15, 'name2' => 'Vostok'] + ($get ?: []),
@@ -416,13 +447,13 @@ class HttpRequestTest extends TestCase
         $server_put = [
             'REQUEST_METHOD' => 'PUT',
             'HTTP_CONTENT_TYPE' => 'application/x-www-form-urlencoded'
-            ] + $server_get;
+        ] + $server_get;
         $php_input = 'id=123&name%5B%5D=Amundsen-Scott&name%5B%5D=Dome%20Fuji';
 
         $server_patch = [
             'REQUEST_METHOD' => 'PATCH',
             'HTTP_CONTENT_TYPE' => 'application/json'
-            ] + $server_get;
+        ] + $server_get;
         $php_input_patch = '{"id":"123","name":["Amundsen-Scott","Dome Fuji"]}';
 
         $filter2 = [
@@ -453,7 +484,7 @@ class HttpRequestTest extends TestCase
             'empty' =>
                 [[], null, null, null, null, null, null, null],
             'basic' =>
-                [['REQUEST_URI'=>'/index.php'] + $server_get, null, null, null, null, null, null, null],
+                [['REQUEST_URI' => '/index.php'] + $server_get, null, null, null, null, null, null, null],
         ];
     }
 }
