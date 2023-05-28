@@ -42,6 +42,11 @@ interface HttpRequestInterface extends MutableFiltersInterface
     public function getQuery(): string;
 
     /**
+     * @return array HTTP request SERVER variables
+     */
+    public function getVarsServer(): array;
+
+    /**
      * @return array HTTP request GET variables
      */
     public function getVarsGet(): array;
