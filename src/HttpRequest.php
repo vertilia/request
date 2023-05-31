@@ -207,10 +207,8 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         $values = $this->cookies + $this->vars_post + $this->vars_get + (array)$this;
 
         foreach ($filters as $k => $v) {
-            if (array_key_exists($k, $values)) {
-                // revalidate existing value;
-                $this[$k] = $values[$k];
-            }
+            // revalidate values;
+            $this[$k] = $values[$k] ?? null;
         }
 
         return $this;
