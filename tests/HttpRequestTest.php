@@ -14,18 +14,18 @@ use const FILTER_VALIDATE_INT;
  */
 class HttpRequestTest extends TestCase
 {
-    protected string $temp_file;
+    protected static string $temp_file = '';
 
-    public function setUpTempFile(): void
+    public static function setUpBeforeClass(): void
     {
-        $this->temp_file = tempnam(sys_get_temp_dir(), 'test_');
-        file_put_contents($this->temp_file, "Delete me\n");
+        self::$temp_file = tempnam(sys_get_temp_dir(), 'test_');
+        file_put_contents(self::$temp_file, "Delete me\n");
     }
 
-    public function tearDown(): void
+    public static function tearDownAfterClass(): void
     {
-        if (!empty($this->temp_file)) {
-            unlink($this->temp_file);
+        if (!empty(self::$temp_file)) {
+            unlink(self::$temp_file);
         }
     }
 
@@ -40,7 +40,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestMultiProvider
+     * @dataProvider providerHttpRequestMulti
      * @covers ::getMethod
      * @covers ::getScheme
      * @covers ::getHost
@@ -73,7 +73,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestMultiProvider(): array
+    public static function providerHttpRequestMulti(): array
     {
         return [
             [
@@ -129,7 +129,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestDecodedArgsProvider
+     * @dataProvider providerHttpRequestDecodedArgs
      * @covers ::getVarsServer
      * @param array $server
      * @param string $name
@@ -144,7 +144,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestDecodedArgsProvider
+     * @dataProvider providerHttpRequestDecodedArgs
      * @covers ::getVarsGet
      * @param array $get
      * @param string $name
@@ -159,7 +159,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestDecodedArgsProvider
+     * @dataProvider providerHttpRequestDecodedArgs
      * @covers ::getVarsPost
      * @param array $post
      * @param string $name
@@ -174,7 +174,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestDecodedArgsProvider
+     * @dataProvider providerHttpRequestDecodedArgs
      * @covers ::getCookies
      * @param array $cookies
      * @param string $name
@@ -189,7 +189,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestDecodedArgsProvider(): array
+    public static function providerHttpRequestDecodedArgs(): array
     {
         $sample = ['a' => 'b', 'c' => null];
 
@@ -200,7 +200,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestFilesProvider
+     * @dataProvider providerHttpRequestFiles
      * @covers ::getFiles
      * @param string[] $files
      * @param string $name
@@ -224,19 +224,15 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestFilesProvider(): array
+    public static function providerHttpRequestFiles(): array
     {
-        if (empty($this->temp_file)) {
-            $this->setUpTempFile();
-        }
-
         return [
             [
                 ['single_file' =>[
                     'name' => 'TestFile.txt',
                     'type' => 'text/plain',
-                    'size' => filesize($this->temp_file),
-                    'tmp_name' => $this->temp_file,
+                    'size' => filesize(self::$temp_file),
+                    'tmp_name' => self::$temp_file,
                     'error' => UPLOAD_ERR_OK,
                 ]], 'single_file'
             ],
@@ -244,8 +240,8 @@ class HttpRequestTest extends TestCase
                 ['multiple_files' =>[
                     'name' => ['TestFile1.txt', 'TestFile2.txt'],
                     'type' => ['text/plain', 'text/plain'],
-                    'size' => [filesize($this->temp_file), filesize($this->temp_file)],
-                    'tmp_name' => [$this->temp_file, $this->temp_file],
+                    'size' => [filesize(self::$temp_file), filesize(self::$temp_file)],
+                    'tmp_name' => [self::$temp_file, self::$temp_file],
                     'error' => [UPLOAD_ERR_OK, UPLOAD_ERR_OK],
                 ]], 'multiple_files'
             ],
@@ -253,7 +249,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestHeadersProvider
+     * @dataProvider providerHttpRequestHeaders
      * @covers ::getHeaders
      * @param array $server
      * @param string $name
@@ -268,7 +264,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestHeadersProvider(): array
+    public static function providerHttpRequestHeaders(): array
     {
         return [
             [['HTTP_HOST' => 'localhost'], 'host', 'localhost'],
@@ -277,7 +273,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestValidationProvider
+     * @dataProvider providerHttpRequestValidation
      * @covers ::__constructor
      * @covers ::getMethod
      * @covers ::getVarsPost
@@ -312,7 +308,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestValidationProvider
+     * @dataProvider providerHttpRequestValidation
      * @covers ::setFilters
      * @covers ::filter
      * @covers ::offsetGet
@@ -364,7 +360,7 @@ class HttpRequestTest extends TestCase
     }
 
     /**
-     * @dataProvider httpRequestValidationProvider
+     * @dataProvider providerHttpRequestValidation
      * @covers ::addFilters
      * @covers ::filter
      * @covers ::offsetGet
@@ -414,7 +410,7 @@ class HttpRequestTest extends TestCase
     }
 
     /** data provider */
-    public function httpRequestValidationProvider(): array
+    public static function providerHttpRequestValidation(): array
     {
         $server_get = [
             'HTTP_COOKIE' => 'ln=en',
@@ -444,6 +440,12 @@ class HttpRequestTest extends TestCase
             'ln' => 'en',
         ];
 
+        $server_post = [
+            'REQUEST_METHOD' => 'POST',
+            'HTTP_CONTENT_TYPE' => 'application/json'
+        ] + $server_get;
+        $php_input_post = '{"id":123,"name":["Amundsen-Scott","Dome Fuji"]}';
+
         $server_put = [
             'REQUEST_METHOD' => 'PUT',
             'HTTP_CONTENT_TYPE' => 'application/x-www-form-urlencoded'
@@ -462,23 +464,26 @@ class HttpRequestTest extends TestCase
         ];
 
         return [
-            'from get: limit' =>
+            'from GET: limit' =>
                 [$server_get, $get, null, $cookie, null, ['limit' => FILTER_VALIDATE_INT], 'limit', 10],
-            'from get: ln' =>
+            'from GET: ln' =>
                 [$server_get, $get, null, $cookie, null, ['ln' => FILTER_DEFAULT], 'ln', 'en'],
 
-            'from php_input: id' =>
+            'from POST php_input: id' =>
+                [$server_post, null, null, null, $php_input_post, $filter2, 'id', 123],
+
+            'from PUT php_input: id' =>
                 [$server_put, null, null, null, $php_input, $filter2, 'id', 123],
-            'from php_input: name' =>
+            'from PUT php_input: name' =>
                 [$server_put, null, null, null, $php_input, $filter2, 'name', ['Amundsen-Scott', 'Dome Fuji']],
-            'from php_input: name err' =>
+            'from PUT php_input: name err' =>
                 [$server_put, null, null, null, 'id=123&name=Dome%20Fuji', $filter2, 'name', false],
 
-            'from php_input_patch: id' =>
+            'from PATCH php_input_patch: id' =>
                 [$server_patch, null, null, null, $php_input_patch, $filter2, 'id', 123],
-            'from php_input_patch: name' =>
+            'from PATCH php_input_patch: name' =>
                 [$server_patch, null, null, null, $php_input_patch, $filter2, 'name', ['Amundsen-Scott', 'Dome Fuji']],
-            'from php_input_patch: name err' =>
+            'from PATCH php_input_patch: name err' =>
                 [$server_patch, null, null, null, '{"id":"123","name":"Dome Fuji"}', $filter2, 'name', false],
 
             'empty' =>

@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Vertilia\Request;
 
-use UnexpectedValueException;
-use Vertilia\MimeType\ApplicationJson;
-use Vertilia\MimeType\ApplicationXWwwFormUrlencoded;
+use Vertilia\MimeType\MimeType;
 use Vertilia\ValidArray\MutableValidArray;
 
 /**
@@ -102,36 +100,19 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
             }
         }
 
-        // for methods other than GET and POST fetch args from $php_input
-        // and register them as post arguments
-        if (!in_array($this->method, ['GET', 'POST'])
-            and isset($this->headers['content-type'])
+        // if Content-Type header is defined, fetch args from $php_input
+        // and register them as POST arguments
+        if (isset($this->headers['content-type'])
             and isset($php_input)
         ) {
             list($type) = explode(';', $this->headers['content-type'], 2);
-            $this->vars_post = (array)$this->decodeMimeType($type, $php_input);
+            $this->vars_post = (array)MimeType::get($type)->decode($php_input);
         }
 
         // set filtered args if provided
         if ($filters) {
             $this->setFilters($filters);
         }
-    }
-
-    protected function decodeMimeType($mime_type, $content)
-    {
-        switch ($mime_type) {
-            case 'application/json':
-                $mt = new ApplicationJson();
-                break;
-            case 'application/x-www-form-urlencoded':
-                $mt = new ApplicationXWwwFormUrlencoded();
-                break;
-            default:
-                throw new UnexpectedValueException('Unknown mime type');
-        }
-
-        return $mt->decode($content);
     }
 
     /**
