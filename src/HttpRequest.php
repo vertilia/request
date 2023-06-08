@@ -41,20 +41,21 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
      * - HTTP_* -- http headers
      *
      * @param array $server normally from $_SERVER
-     * @param ?array $get normally from $_GET
-     * @param ?array $post normally from $_POST
-     * @param ?array $cookies normally from $_COOKIE
-     * @param ?array $files normally from $_FILES
-     * @param ?string $php_input normally from php://input
+     * @param array $get normally from $_GET
+     * @param array $post normally from $_POST
+     * @param array $cookies normally from $_COOKIE
+     * @param array $files normally from $_FILES
+     * @param string $php_input normally from php://input
+     * @param array $filters request parameters filters list
      */
     public function __construct(
         array $server,
-        array $get = null,
-        array $post = null,
-        array $cookies = null,
-        array $files = null,
-        string $php_input = null,
-        array $filters = null
+        array $get = [],
+        array $post = [],
+        array $cookies = [],
+        array $files = [],
+        string $php_input = '',
+        array $filters = []
     ) {
         $this->vars_server = $server;
         // method from REQUEST_METHOD
@@ -89,9 +90,9 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         } elseif ($this->query) {
             parse_str($this->query, $this->vars_get);
         }
-        $this->vars_post = $post ?: [];
-        $this->cookies = $cookies ?: [];
-        $this->files = $files ?: [];
+        $this->vars_post = $post;
+        $this->cookies = $cookies;
+        $this->files = $files;
 
         // set headers
         foreach ($this->vars_server as $k => $v) {
@@ -102,7 +103,8 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
 
         // if Content-Type header is defined, fetch args from $php_input
         // and register them as POST arguments
-        if (isset($this->headers['content-type'])
+        if (empty($this->vars_post)
+            and isset($this->headers['content-type'])
             and isset($php_input)
         ) {
             list($type) = explode(';', $this->headers['content-type'], 2);
@@ -111,25 +113,45 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
 
         // set filtered args if provided
         if ($filters) {
-            $this->setFilters($filters);
+            parent::__construct($filters, $this->cookies + $this->vars_post + $this->vars_get);
+        } else {
+            parent::__construct([]);
+        }
+    }
+
+    protected function registerRequestVars(array $vars = []): void
+    {
+        foreach ($this->cookies + $this->vars_post + $this->vars_get + $vars as $k => $v) {
+            $this[$k] = $v;
         }
     }
 
     /**
-     * Overrides MutableValidArray::setFilters() by validating cookies, post and get values
-     * together with values already registered with $this
+     * Revalidate GET, POST, COOKIES and custom params after resetting filters
      *
      * @param array $filters filters descriptions to add to existing structure
-     * @param bool $add_empty whether to add missing values as NULL
      * @return MutableValidArray $this
      */
-    public function setFilters(array $filters, bool $add_empty = true): MutableValidArray
+    public function setFilters(array $filters): MutableValidArray
     {
-        parent::__construct(
-            $filters,
-            $this->cookies + $this->vars_post + $this->vars_get + (array)$this,
-            $add_empty
-        );
+        $old_vars = (array)$this;
+        parent::setFilters($filters);
+        $this->registerRequestVars($old_vars);
+
+        return $this;
+    }
+
+    /**
+     * Revalidate GET, POST, COOKIES and custom params after adding filters
+     *
+     * @param array $filters filters descriptions to add to existing structure
+     * @return MutableValidArray $this
+     */
+    public function addFilters(array $filters): MutableValidArray
+    {
+        $old_vars = (array)$this;
+        parent::addFilters($filters);
+        $this->registerRequestVars($old_vars);
 
         return $this;
     }
@@ -192,25 +214,5 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
     public function getHeaders(): array
     {
         return $this->headers;
-    }
-
-    /**
-     * Overrides MutableValidArray::addFilters() by validating cookies, post and get values
-     * together with values already registered with $this
-     *
-     * @param array $filters filters descriptions to add to existing structure
-     * @return MutableValidArray $this
-     */
-    public function addFilters(array $filters): MutableValidArray
-    {
-        $this->filters = array_replace($this->filters, $filters);
-        $values = $this->cookies + $this->vars_post + $this->vars_get + (array)$this;
-
-        foreach ($filters as $k => $v) {
-            // revalidate values;
-            $this[$k] = $values[$k] ?? null;
-        }
-
-        return $this;
     }
 }

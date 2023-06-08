@@ -64,12 +64,12 @@ class HttpRequestTest extends TestCase
         string $query
     ) {
         $request = new HttpRequest($server);
-        $this->assertEquals($method, $request->getMethod());
-        $this->assertEquals($scheme, $request->getScheme());
-        $this->assertEquals($host, $request->getHost());
-        $this->assertEquals($port, $request->getPort());
-        $this->assertEquals($path, $request->getPath());
-        $this->assertEquals($query, $request->getQuery());
+        $this->assertSame($method, $request->getMethod());
+        $this->assertSame($scheme, $request->getScheme());
+        $this->assertSame($host, $request->getHost());
+        $this->assertSame($port, $request->getPort());
+        $this->assertSame($path, $request->getPath());
+        $this->assertSame($query, $request->getQuery());
     }
 
     /** data provider */
@@ -140,7 +140,7 @@ class HttpRequestTest extends TestCase
         $request = new HttpRequest($server);
         $arr = $request->getVarsServer();
         $this->assertArrayHasKey($name, $arr);
-        $this->assertEquals($value, $arr[$name]);
+        $this->assertSame($value, $arr[$name]);
     }
 
     /**
@@ -155,7 +155,7 @@ class HttpRequestTest extends TestCase
         $request = new HttpRequest([], $get);
         $arr = $request->getVarsGet();
         $this->assertArrayHasKey($name, $arr);
-        $this->assertEquals($value, $arr[$name]);
+        $this->assertSame($value, $arr[$name]);
     }
 
     /**
@@ -167,10 +167,10 @@ class HttpRequestTest extends TestCase
      */
     public function testRequestPost(array $post, string $name, ?string $value)
     {
-        $request = new HttpRequest([], null, $post);
+        $request = new HttpRequest([], [], $post);
         $arr = $request->getVarsPost();
         $this->assertArrayHasKey($name, $arr);
-        $this->assertEquals($value, $arr[$name]);
+        $this->assertSame($value, $arr[$name]);
     }
 
     /**
@@ -182,10 +182,10 @@ class HttpRequestTest extends TestCase
      */
     public function testRequestCookies(array $cookies, string $name, ?string $value)
     {
-        $request = new HttpRequest([], null, null, $cookies);
+        $request = new HttpRequest([], [], [], $cookies);
         $arr = $request->getCookies();
         $this->assertArrayHasKey($name, $arr);
-        $this->assertEquals($value, $arr[$name]);
+        $this->assertSame($value, $arr[$name]);
     }
 
     /** data provider */
@@ -207,7 +207,7 @@ class HttpRequestTest extends TestCase
      */
     public function testRequestFiles(array $files, string $name)
     {
-        $request = new HttpRequest([], null, null, null, $files);
+        $request = new HttpRequest([], [], [], [], $files);
         $rf = $request->getFiles();
         $this->assertArrayHasKey($name, $rf);
         if (is_array($rf[$name]['error'])) {
@@ -260,7 +260,7 @@ class HttpRequestTest extends TestCase
         $request = new HttpRequest($server);
         $arr = $request->getHeaders();
         $this->assertArrayHasKey($name, $arr);
-        $this->assertEquals($value, $arr[$name]);
+        $this->assertSame($value, $arr[$name]);
     }
 
     /** data provider */
@@ -297,10 +297,10 @@ class HttpRequestTest extends TestCase
         ?string $name,
         $value
     ) {
-        $request = new HttpRequest($server, $get, $post, $cookie, null, $php_input, $filters);
+        $request = new HttpRequest($server ?: [], $get ?: [], $post ?: [], $cookie ?: [], [], $php_input ?: '', $filters ?: []);
         $this->assertInstanceOf(HttpRequest::class, $request);
         if (isset($name)) {
-            $this->assertEquals($value, $request[$name]);
+            $this->assertSame($value, $request[$name]);
         }
         if (!in_array($request->getMethod(), ['GET', 'POST']) and empty($post) and $php_input) {
             $this->assertGreaterThan(0, count($request->getVarsPost()));
@@ -309,9 +309,7 @@ class HttpRequestTest extends TestCase
 
     /**
      * @dataProvider providerHttpRequestValidation
-     * @covers ::setFilters
-     * @covers ::filter
-     * @covers ::offsetGet
+     * @covers ::registerRequestVars
      * @param ?array $server
      * @param ?array $get
      * @param ?array $post
@@ -332,12 +330,12 @@ class HttpRequestTest extends TestCase
         $value
     ) {
         $request = new HttpRequest(
-            $server,
-            $get,
-            $post,
+            $server ?: [],
+            $get ?: [],
+            $post ?: [],
             ['id2' => 15, 'name2' => 'Vostok'] + ($cookie ?: []),
-            null,
-            $php_input,
+            [],
+            $php_input ?: '',
             ['id2' => FILTER_VALIDATE_INT, 'name2' => FILTER_DEFAULT]
         );
 
@@ -350,7 +348,7 @@ class HttpRequestTest extends TestCase
             $request->setFilters($filters);
             // check expected value
             if (isset($name)) {
-                $this->assertEquals($value, $request[$name]);
+                $this->assertSame($value, $request[$name]);
             }
         }
 
@@ -384,12 +382,12 @@ class HttpRequestTest extends TestCase
         $value
     ) {
         $request = new HttpRequest(
-            $server,
+            $server ?: [],
             ['id2' => 15, 'name2' => 'Vostok'] + ($get ?: []),
-            $post,
-            $cookie,
-            null,
-            $php_input,
+            $post ?: [],
+            $cookie ?: [],
+            [],
+            $php_input ?: '',
             ['id2' => FILTER_VALIDATE_INT, 'name2' => FILTER_DEFAULT]
         );
 
@@ -400,7 +398,7 @@ class HttpRequestTest extends TestCase
         if ($filters) {
             $request->addFilters($filters);
             if (isset($name)) {
-                $this->assertEquals($value, $request[$name]);
+                $this->assertSame($value, $request[$name]);
             }
         }
 
@@ -412,7 +410,7 @@ class HttpRequestTest extends TestCase
     /** data provider */
     public static function providerHttpRequestValidation(): array
     {
-        $server_get = [
+        $server_m_get = [
             'HTTP_COOKIE' => 'ln=en',
             'HTTP_ACCEPT_LANGUAGE' => 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ru;q=0.6',
             'HTTP_ACCEPT_ENCODING' => 'gzip, deflate, br',
@@ -433,63 +431,63 @@ class HttpRequestTest extends TestCase
             'SERVER_PORT' => 80,
             'REQUEST_URI' => '/users/?limit=10',
         ];
-        $get = [
+        $get_p_limit = [
             'limit' => 10,
         ];
-        $cookie = [
+        $cookie_p_ln = [
             'ln' => 'en',
         ];
 
-        $server_post = [
+        $server_m_post_t_json = [
             'REQUEST_METHOD' => 'POST',
             'HTTP_CONTENT_TYPE' => 'application/json'
-        ] + $server_get;
-        $php_input_post = '{"id":123,"name":["Amundsen-Scott","Dome Fuji"]}';
+        ] + $server_m_get;
+        $php_input_t_json = '{"id":123,"name":["Amundsen-Scott","Dome Fuji"]}';
 
-        $server_put = [
+        $server_m_put_t_form = [
             'REQUEST_METHOD' => 'PUT',
             'HTTP_CONTENT_TYPE' => 'application/x-www-form-urlencoded'
-        ] + $server_get;
-        $php_input = 'id=123&name%5B%5D=Amundsen-Scott&name%5B%5D=Dome%20Fuji';
+        ] + $server_m_get;
+        $php_input_t_form = 'id=123&name%5B%5D=Amundsen-Scott&name%5B%5D=Dome%20Fuji';
 
-        $server_patch = [
+        $server_m_patch_t_json = [
             'REQUEST_METHOD' => 'PATCH',
             'HTTP_CONTENT_TYPE' => 'application/json'
-        ] + $server_get;
-        $php_input_patch = '{"id":"123","name":["Amundsen-Scott","Dome Fuji"]}';
+        ] + $server_m_get;
+        $php_input_m_patch_t_json = '{"id":"123","name":["Amundsen-Scott","Dome Fuji"]}';
 
-        $filter2 = [
+        $filter_p_id_name = [
             'id' => FILTER_VALIDATE_INT,
             'name' => ['filter' => FILTER_DEFAULT, 'flags' => FILTER_REQUIRE_ARRAY]
         ];
 
         return [
             'from GET: limit' =>
-                [$server_get, $get, null, $cookie, null, ['limit' => FILTER_VALIDATE_INT], 'limit', 10],
+                [$server_m_get, $get_p_limit, null, $cookie_p_ln, null, ['limit' => FILTER_VALIDATE_INT], 'limit', 10],
             'from GET: ln' =>
-                [$server_get, $get, null, $cookie, null, ['ln' => FILTER_DEFAULT], 'ln', 'en'],
+                [$server_m_get, $get_p_limit, null, $cookie_p_ln, null, ['ln' => FILTER_DEFAULT], 'ln', 'en'],
 
             'from POST php_input: id' =>
-                [$server_post, null, null, null, $php_input_post, $filter2, 'id', 123],
+                [$server_m_post_t_json, null, null, null, $php_input_t_json, $filter_p_id_name, 'id', 123],
 
             'from PUT php_input: id' =>
-                [$server_put, null, null, null, $php_input, $filter2, 'id', 123],
+                [$server_m_put_t_form, null, null, null, $php_input_t_form, $filter_p_id_name, 'id', 123],
             'from PUT php_input: name' =>
-                [$server_put, null, null, null, $php_input, $filter2, 'name', ['Amundsen-Scott', 'Dome Fuji']],
+                [$server_m_put_t_form, null, null, null, $php_input_t_form, $filter_p_id_name, 'name', ['Amundsen-Scott', 'Dome Fuji']],
             'from PUT php_input: name err' =>
-                [$server_put, null, null, null, 'id=123&name=Dome%20Fuji', $filter2, 'name', false],
+                [$server_m_put_t_form, null, null, null, 'id=123&name=Dome%20Fuji', $filter_p_id_name, 'name', false],
 
             'from PATCH php_input_patch: id' =>
-                [$server_patch, null, null, null, $php_input_patch, $filter2, 'id', 123],
+                [$server_m_patch_t_json, null, null, null, $php_input_m_patch_t_json, $filter_p_id_name, 'id', 123],
             'from PATCH php_input_patch: name' =>
-                [$server_patch, null, null, null, $php_input_patch, $filter2, 'name', ['Amundsen-Scott', 'Dome Fuji']],
+                [$server_m_patch_t_json, null, null, null, $php_input_m_patch_t_json, $filter_p_id_name, 'name', ['Amundsen-Scott', 'Dome Fuji']],
             'from PATCH php_input_patch: name err' =>
-                [$server_patch, null, null, null, '{"id":"123","name":"Dome Fuji"}', $filter2, 'name', false],
+                [$server_m_patch_t_json, null, null, null, '{"id":"123","name":"Dome Fuji"}', $filter_p_id_name, 'name', false],
 
             'empty' =>
                 [[], null, null, null, null, null, null, null],
             'basic' =>
-                [['REQUEST_URI' => '/index.php'] + $server_get, null, null, null, null, null, null, null],
+                [['REQUEST_URI' => '/index.php'] + $server_m_get, null, null, null, null, null, null, null],
         ];
     }
 }

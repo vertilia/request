@@ -14,9 +14,9 @@
   "require": {
     "php": ">=7.4",
     "vertilia/mime-type": "^1.0",
-    "vertilia/valid-array": "^1.0"
+    "vertilia/valid-array": "^1"
   },
   "require-dev": {
-    "phpunit/phpunit": "*"
+    "phpunit/phpunit": "^9"
   }
 }
