@@ -73,10 +73,12 @@ class HttpRequest extends MutableValidArray implements HttpRequestInterface
         }
         // port from SERVER_PORT
         if (empty($this->port)) {
-            $this->port = $this->vars_server['SERVER_PORT'] ?? ($this->scheme == 'https'
-                ? 443
-                : ($this->host ? 80 : 0)
-            );
+            $this->port = isset($this->vars_server['SERVER_PORT'])
+                ? (int)$this->vars_server['SERVER_PORT']
+                : ($this->scheme == 'https'
+                    ? 443
+                    : ($this->host ? 80 : 0)
+                );
         }
         $this->port = (int)$this->port;
         // path and query from REQUEST_URI
